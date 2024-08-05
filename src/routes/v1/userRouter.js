@@ -6,6 +6,9 @@ const { userController } = require("../../controller/userController");
 // GET USER INFO
 userRouter.get("/getUser/:id",userController.getUserController);
 
+//GET USER PROFILE
+userRouter.get("/getUserProfile/:userID",userController.getUserProfileController);
+
 //UPDATE USER INFO
 userRouter.put("/updateUser/:id",userController.updateUserController);
 

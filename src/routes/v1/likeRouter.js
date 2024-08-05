@@ -8,4 +8,4 @@ likeRouter.post("/likePost/:userId",likeController.likePostController);
 //LIKE COMMENT
 likeRouter.post("/likeComment/:userId",likeController.likeCommentController);
 
-module.exports = {likeRouter};
+module.exports = {likeRouter}; 

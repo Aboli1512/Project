@@ -7,4 +7,4 @@ commentRouter.post("/commentPost/:userId",commentController.commentPostControlle
 
 //COMMENT ON COMMENT
 commentRouter.post("/commentOnComment/:userId",commentController.commentOnCommentController);
-module.exports = {commentRouter};
+module.exports = {commentRouter}; 

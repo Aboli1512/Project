@@ -19,7 +19,7 @@ postRouter.get("/getPost/:userId",postController.getPostController);
 
 
 module.exports = {postRouter};
-
+ 
 
 
 

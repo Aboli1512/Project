@@ -1,6 +1,7 @@
 const express = require("express");
 const user = require("../models/user");
 const post = require("../models/post");
+const bcrypt = require("bcrypt");
 const {CustomError} = require("../middleware/error");
 
 
@@ -14,8 +15,12 @@ const createPostController = async(req,res,next) => {
         const {userId} = req.params;
         const{postContent} = req.body;
 
-
         const getUser = await user.findById(userId);
+        const match = await bcrypt.compare(req.body.password,getUser.password);
+        if(!match)
+        {
+            throw new CustomError("Wrong Credentials",401);
+        }
 
         if(!getUser) 
         {

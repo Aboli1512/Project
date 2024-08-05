@@ -1,5 +1,7 @@
 const express = require("express");
 const user = require("../models/user");
+const jwt = require("jsonwebtoken");
+const bcrypt = require("bcrypt");
 const {CustomError} = require("../middleware/error");
 
 // GET USER INFO
@@ -22,12 +24,68 @@ const getUserController = async(req,res,next) => {
 
 };
 
+//GET USER PROFILE
+const getUserProfileController = async(req,res,next) => {
+    try {
+        const{userID} = req.params;
+        const follower = await user.findById(userID);
+        const getUser = await user.findOne({username : req.body.username});
+        if(!getUser)
+        {
+            throw new CustomError("User not found",404);
+        }
+
+        if(!follower)
+        {
+            throw new CustomError("Follower not found",404);
+        }
+
+        if(!getUser.followers.includes(userID))
+            {
+                throw new CustomError("You don't follow the given user",400);            
+            }
+
+        let LastTenTweets = {};
+
+        if(getUser.posts.length > 0)
+        {
+            LastTenTweets = await user.findOne({username : req.body.username}).populate(
+            {
+                path : 'posts',
+                options : {
+                    limit : 10,
+                    sort : {createdAt : -1}
+                }
+            })
+        }
+
+        res.status(200).json({
+            "username" : getUser.username ,
+            "bio" : getUser.bio ,
+            "follower_count" : getUser.followers.length,
+            "Latest_Tweets" : LastTenTweets
+
+        });
+
+    }  catch(error)
+    {
+        next(error);
+    }
+
+};
 //UPDATE USER INFO
 const updateUserController = async(req,res,next) => {
     try {
         const {id} = req.params;
         const updateinfo = req.body;
+        inpUser = await user.findById(id);
 
+        const match = await bcrypt.compare(req.body.password,inpUser.password);
+        if(!match)
+        {
+            throw new CustomError("Wrong Credentials",401);
+        }
+        
         const userToUpdate = await user.findById(id);
 
         if(!userToUpdate)
@@ -119,6 +177,7 @@ const unfollowUserController = async(req,res,next) => {
 };
 module.exports = {userController: {
     getUserController,
+    getUserProfileController,
     updateUserController,
     followUserController,
     unfollowUserController

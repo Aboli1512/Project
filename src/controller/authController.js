@@ -16,7 +16,7 @@ const signupController = async(req,res,next)=>
             }
 
             const salt = await bcrypt.genSalt(10);
-            const hashedPassword = await bcrypt.hashSync(password,salt);
+            const hashedPassword = await bcrypt.hash(password,salt);
             const newUser = new user({...req.body,password:hashedPassword});
             const addedUser = await newUser.save();
             res.status(201).json(addedUser);
@@ -52,9 +52,12 @@ const loginController = async(req,res,next)=>
                 throw new CustomError("Wrong Credentials",401);
             }
 
-            const {password,...data}=inpUser._doc;
             const token = jwt.sign({_id : inpUser._id},process.env.JWT_SECRET,{expiresIn:process.env.JWT_DATE});
-            res.cookie("token",token).status(200).json(data);
+            res.cookie("token",token).status(200).json(
+                {
+                    "message" : "LOGIN SUCCESSFULL",
+                    "id" : inpUser.id
+                });
         } catch(error)
         {
             next(error);
