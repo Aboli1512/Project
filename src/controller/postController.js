@@ -1,37 +1,15 @@
-const express = require("express");
-const user = require("../models/user");
-const post = require("../models/post");
-const bcrypt = require("bcrypt");
-const {CustomError} = require("../middleware/error");
+const {PostService} = require("../service/postService")
+const postService = new PostService();
 
-
-const generateFileURL = (filename) =>
-{
-    return process.env.URL+`/uploads/${filename}`
-}
 // CREATE POST
 const createPostController = async(req,res,next) => {
     try {
         const {userId} = req.params;
         const{postContent} = req.body;
+        const inp_password = req.body.password;
+        const data = req.file;
 
-        const getUser = await user.findById(userId);
-        const match = await bcrypt.compare(req.body.password,getUser.password);
-        if(!match)
-        {
-            throw new CustomError("Wrong Credentials",401);
-        }
-
-        if(!getUser) 
-        {
-            throw new CustomError("User not found",404);
-        }
-
-        const newPost = new post ({post_user : userId , postContent , image : generateFileURL(req.file.filename)});
-        await newPost.save();
-        getUser.posts.push(newPost._id);
-        await getUser.save();
-
+        const newPost = await postService.createPost(userId,postContent,inp_password,data);
         res.status(201).json({message : "Post created successfully" , post : newPost});
 
     }  catch(error)
@@ -40,23 +18,13 @@ const createPostController = async(req,res,next) => {
     }
 };
 
+//GET IDS OF ALL POSTS
 const getAllPostsIdsController = async(req,res,next) => {
     try {
         const {userId} = req.params;
         const userOfPost_id = req.body._id;
-        const userOfPost = await user.findById(userOfPost_id);
-        const follower = await user.findById(userId);
 
-        if(!userOfPost && !follower)
-        {
-            throw new CustomError("User not found",404);
-        }
-
-        if(!userOfPost.followers.includes(userId))
-        {
-            throw new CustomError("You don't follow the given user",400);            
-        }
-
+        const userOfPost = await postService.getPostIDs(userId,userOfPost_id);
         res.status(200).json(userOfPost.posts);
 
     }  catch(error)
@@ -71,33 +39,9 @@ const getSomePostsController = async(req,res,next) => {
     try {
         const {userId} = req.params;
         const userOfPost_id = req.body._id;
-        const userOfPost = await user.findById(userOfPost_id);
-        const follower = await user.findById(userId);
-
-        if(!userOfPost && !follower)
-        {
-            throw new CustomError("User not found",404);
-        }
-
-        if(!userOfPost.followers.includes(userId))
-        {
-            throw new CustomError("You don't follow the given user",400);            
-        }
-
         const {page, page_size} = req.body;
 
-        const start_index = (page-1) * page_size;
-        
-        const postsToDisplay = await user.findById(userOfPost_id).populate(
-            {
-            path : 'posts',
-            options : {
-                skip : start_index,
-                limit : page_size,
-                sort : {createdAt : -1}
-            }
-            }
-        );
+        const postsToDisplay = await postService.getSomePosts(userId,userOfPost_id,page,page_size);
 
         res.status(200).json(postsToDisplay);
 
@@ -111,29 +55,8 @@ const getPostController = async(req,res,next) => {
     try {
         const {userId} = req.params;
         const {postId} = req.body;
-        
-        const follower = await user.findById(userId);
-        const getPost = await post.findById(postId);
-
-        if(!follower)
-        {
-            throw new CustomError("User not found",404);
-        }
-
-        if(!getPost)
-        {
-            throw new CustomError("Post not found",404);
-        }
-
-
-        const userOfPost_id = getPost.post_user;
-        const userOfPost = await user.findById(userOfPost_id);
-              
-        if(!userOfPost.followers.includes(userId))
-        {
-            throw new CustomError("You don't follow the given user",400);            
-        }
-
+    
+        const getPost = await postService.getPostById(userId,postId);
         res.status(200).json(getPost);
 
     }  catch(error)

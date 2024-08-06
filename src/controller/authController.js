@@ -1,24 +1,13 @@
-const express = require("express");
-const bcrypt = require("bcrypt");
-const jwt = require("jsonwebtoken");
-const user = require("../models/user");
-const {CustomError} = require("../middleware/error");
+const {AuthService} = require("../service/authService")
+const authService = new AuthService();
 
 const signupController = async(req,res,next)=>
     {
         try
         {
             const {username , email , password} = req.body;
-            const check = await user.findOne({$or : [{username} , {email}]});
-            if(check)
-            {
-                throw new CustomError("Username or email already existing. Not a unique info",400);
-            }
-
-            const salt = await bcrypt.genSalt(10);
-            const hashedPassword = await bcrypt.hash(password,salt);
-            const newUser = new user({...req.body,password:hashedPassword});
-            const addedUser = await newUser.save();
+            const data = req.body;
+            const addedUser = await authService.signUp(username , email , password , data);
             res.status(201).json(addedUser);
 
         } catch(error)
@@ -31,32 +20,13 @@ const loginController = async(req,res,next)=>
     {
         try
         {
-            let inpUser;
-            if(req.body.email)
-            {
-                inpUser = await user.findOne({email : req.body.email});
-            }
-            else
-            {
-                inpUser = await user.findOne({username : req.body.username});
-            }
 
-            if(!inpUser)
-            {
-                throw new CustomError("User not found",404);
-            }
-
-            const match = await bcrypt.compare(req.body.password,inpUser.password);
-            if(!match)
-            {
-                throw new CustomError("Wrong Credentials",401);
-            }
-
-            const token = jwt.sign({_id : inpUser._id},process.env.JWT_SECRET,{expiresIn:process.env.JWT_DATE});
+            const data = req.body;
+            const {token , userId} = await authService.login(data);
             res.cookie("token",token).status(200).json(
                 {
                     "message" : "LOGIN SUCCESSFULL",
-                    "id" : inpUser.id
+                    "id" : userId
                 });
         } catch(error)
         {
